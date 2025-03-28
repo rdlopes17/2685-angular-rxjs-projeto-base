@@ -13,6 +13,6 @@ export class LivroService {
 
   buscar(valorDigitado: string): Observable<LivrosResultado> {
     const params = new HttpParams().append('q', valorDigitado);
-    return this.http.get(this.API, { params });
+    return this.http.get<LivrosResultado>(this.API, { params });
   }
 }
