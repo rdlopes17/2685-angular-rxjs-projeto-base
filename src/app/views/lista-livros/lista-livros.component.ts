@@ -1,6 +1,7 @@
-import { Component, OnDestroy } from '@angular/core';
-import { Subscription } from 'rxjs';
-import { Item, Livro } from 'src/app/models/interfaces';
+import { Component } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { map, switchMap, tap } from 'rxjs';
+import { Item } from 'src/app/models/interfaces';
 import { LivroVolumeInfo } from 'src/app/models/livroVolumeInfo';
 import { LivroService } from 'src/app/service/livro.service';
 
@@ -9,51 +10,39 @@ import { LivroService } from 'src/app/service/livro.service';
   templateUrl: './lista-livros.component.html',
   styleUrls: ['./lista-livros.component.css'],
 })
-export class ListaLivrosComponent implements OnDestroy {
-  listaLivros: Livro[];
-  campoBusca = '';
-  subscription: Subscription;
-  livro: Livro;
+export class ListaLivrosComponent {
+  // modelo com o uso do  pipe |async efetua as acoes de subcription e unsubscription e
+  // guarda o conteudo na variavel listaLivros, simplificando as variaveis declaradas e
+  // efetuando a atribuicao direta  no map()
+  campoBusca = new FormControl();
 
   constructor(private service: LivroService) {}
 
-  buscarLivros() {
-    this.subscription = this.service.buscar(this.campoBusca).subscribe({
-      next: (items) => {
-        this.listaLivros = this.livrosResultadoParaLivros(items)
-      },
-      error: erro => console.error(erro),
-    })
-  }
+  livrosEncontrados$ = this.campoBusca.valueChanges.pipe(
+    tap(() => console.log('Fluxo inicial')),
+    switchMap((valorDigitado) => this.service.buscar(valorDigitado)),
+    tap(() => console.log('Requisicao ao servidor')),
+    map((items) => this.livrosResultadoParaLivros(items))
+  );
 
-  //mode que foi refatorado com o uso da class LivroVolumeInfo
-  // livrosResultadoParaLivros(items): Livro[] {
-  //   const livros: Livro[] = []
-
-  //   items.forEach(item => {
-  //     livros.push(this.livro = {
-  //       title: item.volumeInfo?.title,
-  //       authors: item.volumeInfo?.authors,
-  //       publisher: item.volumeInfo?.publisher,
-  //       publishedDate: item.volumeInfo?.publishedDate,
-  //       description: item.volumeInfo?.description,
-  //       previewLink: item.volumeInfo?.previewLink,
-  //       thumbnail: item.volumeInfo?.imageLinks?.thumbnail
-  //     })
-  //   })
-
-  //   return livros
-  // }
-
-
-   //modelo refatorado com o uso de ua class e o map 
   livrosResultadoParaLivros(items: Item[]): LivroVolumeInfo[] {
-    return items.map(item => {
-      return new LivroVolumeInfo(item)
-    })
+    return items.map((item) => {
+      return new LivroVolumeInfo(item);
+    });
   }
 
-  ngOnDestroy(): void {
-    this.subscription.unsubscribe();
-  }
+  //modelo antes do uso do  pipe |async efetua as acoes de subcription e unsubscription e
+  // guarda o conteudo na variavel listaLivros, simplificando as variaveis declaradas e
+  // efetuando a atribuicao direta  no map()
+  // listaLivros: Livro[];
+  // campoBusca = new FormControl();
+  // subscription: Subscription;
+  // livro: Livro;
+
+  // constructor(private service: LivroService) {}
+
+  // livrosEncontrados$ = this.campoBusca.valueChanges.pipe(
+  //   switchMap((valorDigitado) => this.service.buscar(valorDigitado)),
+  //   map((items) => (this.listaLivros = this.livrosResultadoParaLivros(items)))
+  //);
 }
