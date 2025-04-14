@@ -1,6 +1,13 @@
 import { Component } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { debounceTime, filter, map, switchMap, tap } from 'rxjs';
+import {
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  map,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { Item } from 'src/app/models/interfaces';
 import { LivroVolumeInfo } from 'src/app/models/livroVolumeInfo';
 import { LivroService } from 'src/app/service/livro.service';
@@ -19,13 +26,15 @@ export class ListaLivrosComponent {
 
   constructor(private service: LivroService) {}
 
-  livrosEncontrados$ = this.campoBusca.valueChanges.pipe(// agrupador de operadores
+  livrosEncontrados$ = this.campoBusca.valueChanges.pipe(
+    // agrupador de operadores
     debounceTime(PAUSA), // controle de tempo para pesquisa
     filter((valorDigitado) => valorDigitado.length >= 3), // uso do filter para controle do campo de busca
-    tap(() => console.log('Fluxo inicial')),// espiao para controle de fluxo, debug
-    switchMap((valorDigitado) => this.service.buscar(valorDigitado)),// transforma a entrada passando o ultimo valor
-    tap(() => console.log('Requisicao ao servidor')),// espiao para controle de fluxo, debug
-    map((items) => this.livrosResultadoParaLivros(items))// transforma os dados para o formato da pesquisa, para apresentacao
+    tap(() => console.log('Fluxo inicial')), // espiao para controle de fluxo, debug
+    distinctUntilChanged(), //compara os valores recebidos, caso sejam diferentes libera uma nova requisicao
+    switchMap((valorDigitado) => this.service.buscar(valorDigitado)), // transforma a entrada passando o ultimo valor
+    tap(() => console.log('Requisicao ao servidor')), // espiao para controle de fluxo, debug
+    map((items) => this.livrosResultadoParaLivros(items)) // transforma os dados para o formato da pesquisa, para apresentacao
   );
 
   livrosResultadoParaLivros(items: Item[]): LivroVolumeInfo[] {
