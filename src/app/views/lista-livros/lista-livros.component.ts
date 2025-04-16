@@ -1,12 +1,15 @@
 import { Component } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import {
+  catchError,
   debounceTime,
   distinctUntilChanged,
+  EMPTY,
   filter,
   map,
   switchMap,
   tap,
+  throwError,
 } from 'rxjs';
 import { Item } from 'src/app/models/interfaces';
 import { LivroVolumeInfo } from 'src/app/models/livroVolumeInfo';
@@ -23,6 +26,7 @@ export class ListaLivrosComponent {
   // guarda o conteudo na variavel listaLivros, simplificando as variaveis declaradas e
   // efetuando a atribuicao direta  no map()
   campoBusca = new FormControl();
+  mensagemErro = '';
 
   constructor(private service: LivroService) {}
 
@@ -34,7 +38,13 @@ export class ListaLivrosComponent {
     distinctUntilChanged(), //compara os valores recebidos, caso sejam diferentes libera uma nova requisicao
     switchMap((valorDigitado) => this.service.buscar(valorDigitado)), // transforma a entrada passando o ultimo valor
     tap(() => console.log('Requisicao ao servidor')), // espiao para controle de fluxo, debug
-    map((items) => this.livrosResultadoParaLivros(items)) // transforma os dados para o formato da pesquisa, para apresentacao
+    map((items) => this.livrosResultadoParaLivros(items)), // transforma os dados para o formato da pesquisa, para apresentacao
+    catchError(() => { //captura o erro, mais não emite valores
+      this.mensagemErro = 'Ops, ocorreu um erro. Recarrege a aplicação!'
+      return EMPTY//Ele cria um Observable simples que não emite nenhum item para o Observer e que emite imediatamente uma notificação de "Complete" para encerrar o seu ciclo de vida
+      // console.log(erro);
+      // return throwError(() => new Error(this.mensagemErro = 'Ops, ocorreu um erro. Recarrege a aplicação!')); //cria um observeble com a instancia de erro
+    })
   );
 
   livrosResultadoParaLivros(items: Item[]): LivroVolumeInfo[] {
