@@ -29,6 +29,7 @@ export class ListaLivrosComponent {
   campoBusca = new FormControl();
   mensagemErro = '';
   livrosResultado: LivrosResultado;
+  listaLivros: LivroVolumeInfo[];
 
   constructor(private service: LivroService) {}
 
@@ -47,7 +48,7 @@ export class ListaLivrosComponent {
   );
 
   // Ex: Obsevervable com os operadores para buscar resultados e convertendos os para o tipo ITENS para apresentacao em tela
-  livrosEncontrados$ = this.campoBusca.valueChanges.pipe(
+  livrosEncontradosAntigo$ = this.campoBusca.valueChanges.pipe(
     // agrupador de operadores
     debounceTime(PAUSA), // controle de tempo para pesquisa
     filter((valorDigitado) => valorDigitado.length >= 3), // uso do filter para controle do campo de busca
@@ -68,6 +69,29 @@ export class ListaLivrosComponent {
             (this.mensagemErro = 'Ops, ocorreu um erro. Recarrege a aplicação!')
           )
       ); //cria um observeble com a instancia de erro
+    })
+  );
+
+  //modelo que une os dois observables criados
+  livrosEncontrados$ = this.campoBusca.valueChanges.pipe(
+    debounceTime(PAUSA),
+    tap(() => {
+      console.log('Fluxo inicial de dados');
+    }),
+    filter((valorDigitado) => valorDigitado.length >= 3),
+    switchMap((valorDigitado) => this.service.buscar(valorDigitado)),
+    map((resultado) => (this.livrosResultado = resultado)),
+    map((resultado) => resultado.items ?? []),
+    tap(console.log),
+    map((items) => (this.listaLivros = this.livrosResultadoParaLivros(items))),
+    catchError((erro) => {
+      console.log(erro);
+      return throwError(
+        () =>
+          new Error(
+            (this.mensagemErro = `Ops, ocorreu um erro! Recarregue a aplicação!`)
+          )
+      );
     })
   );
 
